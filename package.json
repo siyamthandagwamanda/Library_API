@@ -4,13 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsc src/server.ts",
-    "dev": "nodemon --exec ts-nodde src/server.ts"
+    "start": "tsc",
+    "dev": "nodemon --exec ts-node src/server.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^22.20.3",
@@ -18,9 +18,11 @@
     "express": "^5.2.1",
     "parser": "^0.1.4",
     "ts-node": "^10.9.2",
-    "typescript": "^7.0.2"
+    "typescript": "^6.0.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "tsx": "^4.23.13"
   }
+  
 }
