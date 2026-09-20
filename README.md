@@ -153,12 +153,6 @@ Error body format:
 { "error": "Message" }
 ```
 
-## Development Workflow
-
-- Default branch: `main`
-- Active development branch: `dev`
-  - All new work lands on `dev` via commits/PRs
-
 ## Sample Requests
 
 Create author:
