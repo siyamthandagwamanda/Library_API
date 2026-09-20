@@ -1,8 +1,19 @@
 import type { Request, Response, NextFunction } from "express";
 import { authors, getNextAuthorId, type Author } from "../model/author.js";
-
+import { queryBooks } from "./booksController.js";
+import { books } from "../model/books.js";
 export function getAuthors(_req: Request, res: Response, _next: NextFunction) {
   res.status(200).json(authors);
+}
+export function getAuthorBooks(req: Request, res: Response, _next: NextFunction) {
+  const id = Number(req.params.id);
+
+  if (!authors.some((a) => a.id === id)) {
+    res.status(404).json({ error: "Author not found" });
+    return;
+  }
+
+  res.status(200).json(queryBooks(books.filter((b) => b.authorId === id), req.query));
 }
 
 export function getAuthorById(req: Request, res: Response, _next: NextFunction) {
