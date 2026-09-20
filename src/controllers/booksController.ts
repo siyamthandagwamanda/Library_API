@@ -6,7 +6,7 @@ function authorExists(id: number) {
   return authors.some((a) => a.id === id);
 }
 
-// same title (ignoring upper/lower case) by the same author
+
 function titleTaken(title: string, authorId: number, ignoreId?: number) {
   return books.some(
     (b) =>
@@ -16,7 +16,7 @@ function titleTaken(title: string, authorId: number, ignoreId?: number) {
   );
 }
 
-// "1987-11-12" gives 1987
+
 function getYear(book: Book) {
   if (!book.publishedDate) return undefined;
   return Number(book.publishedDate.slice(0, 4));

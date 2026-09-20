@@ -44,7 +44,7 @@ export function validateCreateBook(req: Request, res: Response, next: NextFuncti
   next();
 }
 
-//Books: PUT (send at least one field)
+//Books: PUT 
 export function validateUpdateBook(req: Request, res: Response, next: NextFunction) {
   const body = req.body || {};
   const { title, authorId, publishedDate } = body;
