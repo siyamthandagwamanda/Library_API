@@ -17,11 +17,10 @@ app.use("/", router);
 app.use(notFound);
 app.use(errorHandler);
 
-// Config
-const PORT = Number(process.env.PORT ?? 3000);
-const HOST = process.env.HOST ?? "0.0.0.0";
 
-app.listen(PORT, HOST, () => {
+const PORT = Number(process.env.PORT ?? 3000);
+
+app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
 export default app;
