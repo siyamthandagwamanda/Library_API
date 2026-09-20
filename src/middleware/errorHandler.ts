@@ -1,13 +1,18 @@
-import { error } from "console";
 import type { Request, Response, NextFunction } from "express";
-import { stat } from "fs";
 
-export function notFound(_req: Request, res: Response, _next: NextFunction){
-    res.status(404).json({ error: "Route not found" });
+
+export function notFound(_req: Request, res: Response, _next: NextFunction) {
+  res.status(404).json({ error: "Route not found" });
 }
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction){
-    const message = err instanceof Error ? err.message : "Unknown error";
-    const status = (err as any)?.statusCode ?? 500;
-    res.status(status).json({error: message});
+
+export function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
+
+  if (err.status === 400) {
+    res.status(400).json({ error: "Invalid JSON body" });
+    return;
+  }
+
+  console.error(err);
+  res.status(500).json({ error: "Internal Server Error" });
 }

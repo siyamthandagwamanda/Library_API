@@ -7,5 +7,8 @@ export interface Author {
 
 export const authors: Author[] = [];
 
-let idCounter = 1;
-export const getNextAuthorId = () => idCounter++;
+let nextId = 1;
+
+export function getNextAuthorId() {
+  return nextId++;
+}

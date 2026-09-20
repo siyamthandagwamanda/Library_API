@@ -2,72 +2,92 @@ import type { Request, Response, NextFunction } from "express";
 import { books, getNextBookId, type Book } from "../model/books.js";
 import { authors } from "../model/author.js";
 
-const authorExists = (id: number) => authors.some((a) => a.id === id);
+function authorExists(id: number) {
+  return authors.some((a) => a.id === id);
+}
 
-const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+// same title (ignoring upper/lower case) by the same author
+function titleTaken(title: string, authorId: number, ignoreId?: number) {
+  return books.some(
+    (b) =>
+      b.authorId === authorId &&
+      b.title.toLowerCase() === title.toLowerCase() &&
+      b.id !== ignoreId
+  );
+}
 
-const num = (v: unknown) => {
-  if (v === undefined || v === "") return undefined;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : undefined;
-};
+// "1987-11-12" gives 1987
+function getYear(book: Book) {
+  if (!book.publishedDate) return undefined;
+  return Number(book.publishedDate.slice(0, 4));
+}
 
+// filter, sort and paginate a list of books
+export function filterBooks(list: Book[], query: Request["query"]) {
+  let result = [...list];
 
-const yearOf = (b: Book) => (b.publishedDate ? Number(b.publishedDate.slice(0, 4)) : undefined);
-
-export function queryBooks(source: Book[], query: Request["query"]) {
-  const q = (str(query.q) ?? str(query.title))?.toLowerCase();
-  const authorQ = str(query.author)?.toLowerCase();
-  const year = num(query.year);
-  const yearMin = num(query.yearMin);
-  const yearMax = num(query.yearMax);
-
-
-  let result = source.filter((b) => {
-    const y = yearOf(b);
-    return (
-      (q === undefined || b.title.toLowerCase().includes(q)) &&
-      (year === undefined || y === year) &&
-      (yearMin === undefined || (y !== undefined && y >= yearMin)) &&
-      (yearMax === undefined || (y !== undefined && y <= yearMax))
-    );
-  });
-
-  if (authorQ) {
-    const ids = authors.filter((a) => a.name.toLowerCase().includes(authorQ)).map((a) => a.id);
-    result = result.filter((b) => ids.includes(b.authorId));
+  // filtering
+  const search = query.q || query.title;
+  if (typeof search === "string") {
+    result = result.filter((b) => b.title.toLowerCase().includes(search.toLowerCase()));
   }
 
-  
-  const sortBy = str(query.sortBy);
-  const dir = str(query.sortOrder) === "desc" ? -1 : 1;
-  const key = (b: Book): string | number | undefined =>
-    sortBy === "title" ? b.title.toLowerCase()
-    : sortBy === "publishedDate" ? b.publishedDate
-    : b.id;
+  if (typeof query.author === "string") {
+    const text = query.author.toLowerCase();
+    const authorIds = authors
+      .filter((a) => a.name.toLowerCase().includes(text))
+      .map((a) => a.id);
+    result = result.filter((b) => authorIds.includes(b.authorId));
+  }
 
-  result = [...result].sort((a, b) => {
-    const x = key(a);
-    const y = key(b);
-    if (x === undefined && y === undefined) return 0;
-    if (x === undefined) return 1;   // missing values sort last
-    if (y === undefined) return -1;
-    const cmp =
-      typeof x === "string" && typeof y === "string" ? x.localeCompare(y) : Number(x) - Number(y);
-    return cmp * dir;
-  });
+  if (query.year) {
+    const year = Number(query.year);
+    result = result.filter((b) => getYear(b) === year);
+  }
+  if (query.yearMin) {
+    const min = Number(query.yearMin);
+    result = result.filter((b) => {
+      const y = getYear(b);
+      return y !== undefined && y >= min;
+    });
+  }
+  if (query.yearMax) {
+    const max = Number(query.yearMax);
+    result = result.filter((b) => {
+      const y = getYear(b);
+      return y !== undefined && y <= max;
+    });
+  }
 
+  // sorting
+  const order = query.sortOrder === "desc" ? -1 : 1;
+  if (query.sortBy === "title") {
+    result.sort((a, b) => a.title.localeCompare(b.title) * order);
+  } else if (query.sortBy === "publishedDate") {
+    result.sort((a, b) => (a.publishedDate || "").localeCompare(b.publishedDate || "") * order);
+  } else {
+    result.sort((a, b) => (a.id - b.id) * order);
+  }
 
-  const page = Math.max(1, Math.floor(num(query.page) ?? 1));
-  const pageSize = Math.min(100, Math.max(1, Math.floor(num(query.pageSize) ?? 10)));
+  // pagination
+  let page = Math.floor(Number(query.page)) || 1;
+  let pageSize = Math.floor(Number(query.pageSize)) || 10;
+  if (page < 1) page = 1;
+  if (pageSize < 1) pageSize = 10;
+  if (pageSize > 100) pageSize = 100;
+
   const total = result.length;
-  const data = result.slice((page - 1) * pageSize, page * pageSize);
+  const start = (page - 1) * pageSize;
+  const data = result.slice(start, start + pageSize);
 
-  return { data, meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) } };
+  return {
+    data,
+    meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
+  };
 }
 
 export function getAllBooks(req: Request, res: Response, _next: NextFunction) {
-  res.status(200).json(queryBooks(books, req.query));
+  res.status(200).json(filterBooks(books, req.query));
 }
 
 export function getBookById(req: Request, res: Response, _next: NextFunction) {
@@ -86,8 +106,17 @@ export function createBook(req: Request, res: Response, _next: NextFunction) {
     res.status(404).json({ error: "Author not found" });
     return;
   }
+  if (titleTaken(title.trim(), authorId)) {
+    res.status(409).json({ error: "This author already has a book with that title" });
+    return;
+  }
 
-  const newBook: Book = { id: getNextBookId(), title: title.trim(), authorId, publishedDate };
+  const newBook: Book = {
+    id: getNextBookId(),
+    title: title.trim(),
+    authorId,
+    publishedDate,
+  };
   books.push(newBook);
   res.status(201).json(newBook);
 }
@@ -106,8 +135,16 @@ export function updateBook(req: Request, res: Response, _next: NextFunction) {
     return;
   }
 
-  book.title = title !== undefined ? title.trim() : book.title;
-  book.authorId = authorId ?? book.authorId;
+  const newTitle = title !== undefined ? title.trim() : book.title;
+  const newAuthorId = authorId !== undefined ? authorId : book.authorId;
+
+  if (titleTaken(newTitle, newAuthorId, book.id)) {
+    res.status(409).json({ error: "This author already has a book with that title" });
+    return;
+  }
+
+  book.title = newTitle;
+  book.authorId = newAuthorId;
   book.publishedDate = publishedDate ?? book.publishedDate;
   res.status(200).json(book);
 }

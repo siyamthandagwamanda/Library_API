@@ -1,68 +1,68 @@
 import type { Request, Response, NextFunction } from "express";
 
-const isNonEmptyString = (v: unknown): v is string =>
-  typeof v === "string" && v.trim() !== "";
-
-const isPositiveInt = (v: unknown): v is number =>
-  typeof v === "number" && Number.isInteger(v) && v > 0;
-
-const isValidDate = (v: unknown): boolean =>
-  typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v));
-
-function fail(res: Response, errors: string[]) {
-  res.status(400).json({ error: errors.join("; ") });
+function isDate(value: any) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(value));
 }
 
 //Authors (POST and PUT)
 export function validateAuthor(req: Request, res: Response, next: NextFunction) {
-  const { name, bio, birthDate } = req.body ?? {};
-  const errors: string[] = [];
+  const body = req.body || {};
+  const { name, bio, birthDate } = body;
 
-  if (!isNonEmptyString(name)) errors.push("name is required and must be a non-empty string");
-  if (bio !== undefined && typeof bio !== "string") errors.push("bio must be a string");
-  if (birthDate !== undefined && !isValidDate(birthDate))
-    errors.push("birthDate must be a valid date in YYYY-MM-DD format");
-
-  if (errors.length > 0) {
-    fail(res, errors);
+  if (typeof name !== "string" || name.trim() === "") {
+    res.status(400).json({ error: "name is required and must be a non-empty string" });
+    return;
+  }
+  if (bio !== undefined && typeof bio !== "string") {
+    res.status(400).json({ error: "bio must be a string" });
+    return;
+  }
+  if (birthDate !== undefined && !isDate(birthDate)) {
+    res.status(400).json({ error: "birthDate must be a date like 1948-04-28" });
     return;
   }
   next();
 }
 
-// Books 
-function bookErrors(body: any, isCreate: boolean): string[] {
-  const { title, authorId, publishedDate } = body ?? {};
-  const errors: string[] = [];
-
-  // POST: title and authorId required.
-  // PUT: checked only if sent.
-  if ((isCreate || title !== undefined) && !isNonEmptyString(title))
-    errors.push("title is required and must be a non-empty string");
-  if ((isCreate || authorId !== undefined) && !isPositiveInt(authorId))
-    errors.push("authorId is required and must be a positive integer");
-  if (publishedDate !== undefined && !isValidDate(publishedDate))
-    errors.push("publishedDate must be a valid date in YYYY-MM-DD format");
-
-  if (!isCreate && [title, authorId, publishedDate].every((v) => v === undefined))
-    errors.push("provide at least one of: title, authorId, publishedDate");
-
-  return errors;
-}
-
+//Books: POST 
 export function validateCreateBook(req: Request, res: Response, next: NextFunction) {
-  const errors = bookErrors(req.body, true);
-  if (errors.length > 0) {
-    fail(res, errors);
+  const body = req.body || {};
+  const { title, authorId, publishedDate } = body;
+
+  if (typeof title !== "string" || title.trim() === "") {
+    res.status(400).json({ error: "title is required and must be a non-empty string" });
+    return;
+  }
+  if (!Number.isInteger(authorId) || authorId < 1) {
+    res.status(400).json({ error: "authorId is required and must be a positive whole number" });
+    return;
+  }
+  if (publishedDate !== undefined && !isDate(publishedDate)) {
+    res.status(400).json({ error: "publishedDate must be a date like 1987-11-12" });
     return;
   }
   next();
 }
 
+//Books: PUT (send at least one field)
 export function validateUpdateBook(req: Request, res: Response, next: NextFunction) {
-  const errors = bookErrors(req.body, false);
-  if (errors.length > 0) {
-    fail(res, errors);
+  const body = req.body || {};
+  const { title, authorId, publishedDate } = body;
+
+  if (title === undefined && authorId === undefined && publishedDate === undefined) {
+    res.status(400).json({ error: "send at least one of: title, authorId, publishedDate" });
+    return;
+  }
+  if (title !== undefined && (typeof title !== "string" || title.trim() === "")) {
+    res.status(400).json({ error: "title must be a non-empty string" });
+    return;
+  }
+  if (authorId !== undefined && (!Number.isInteger(authorId) || authorId < 1)) {
+    res.status(400).json({ error: "authorId must be a positive whole number" });
+    return;
+  }
+  if (publishedDate !== undefined && !isDate(publishedDate)) {
+    res.status(400).json({ error: "publishedDate must be a date like 1987-11-12" });
     return;
   }
   next();
