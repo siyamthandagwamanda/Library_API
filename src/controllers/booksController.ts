@@ -1,53 +1,62 @@
-import { Request, response, NextFunction } from "express";
-import { books, book } from "../model/books.js";
+import type { Request, Response, NextFunction } from "express";
+import { books, getNextBookId, type Book } from "../model/books.js";
+import { authors } from "../model/author.js";
 
-export function getAllBooks(_req: Request, res: typeof response, _next: NextFunction) {
-  res.json(books);
+const authorExists = (id: number) => authors.some((a) => a.id === id);
+
+export function getAllBooks(_req: Request, res: Response, _next: NextFunction) {
+  res.status(200).json({ data: books });
 }
-export function getBookById(req: Request, res: typeof response, _next: NextFunction) {
-  const id = Number(req.params.id); 
 
-    const book = books.find((b) => b.id === id);
-    if (book) {
-    res.json(book);  }
-    else {
+export function getBookById(req: Request, res: Response, _next: NextFunction) {
+  const book = books.find((b) => b.id === Number(req.params.id));
+  if (!book) {
     res.status(404).json({ error: "Book not found" });
-    }
-
-}
-export function createBook(req: Request, res: typeof response, _next: NextFunction) {     
-    const { title, authorId, publishedDate } = req.body;
-    const newBook: book = {
-        id: books.length + 1,
-        title,
-        authorId,
-        publishedDate,
-    };
-    books.push(newBook);
-    res.status(201).json(newBook);
+    return;
+  }
+  res.status(200).json(book);
 }
 
-export function updateBook(req: Request, res: typeof response, _next: NextFunction) {
-    const id = Number(req.params.id);
-    const book = books.find((b) => b.id === id);    
-    if (book) {
-        const { title, authorId, publishedDate } = req.body;
-        book.title = title ?? book.title;
-        book.authorId = authorId ?? book.authorId;
-        book.publishedDate = publishedDate ?? book.publishedDate;
-        res.json(book);
-    } else {
-        res.status(404).json({ error: "Book not found" });
-    }
-}
-export function deleteBook(req: Request, res: typeof response, _next: NextFunction) {
-    const id = Number(req.params.id);
-    const index = books.findIndex((b) => b.id === id);
-    if (index !== -1) {
-        books.splice(index, 1);
-        res.status(200).json({message: "Book deleted successfully"});
-    } else {
-        res.status(404).json({ error: "Book not found" });
-    }   
+export function createBook(req: Request, res: Response, _next: NextFunction) {
+  const { title, authorId, publishedDate } = req.body;
 
+  if (!authorExists(authorId)) {
+    res.status(404).json({ error: "Author not found" });
+    return;
+  }
+
+  const newBook: Book = { id: getNextBookId(), title: title.trim(), authorId, publishedDate,};
+  books.push(newBook);
+  res.status(201).json(newBook);
+}
+
+export function updateBook(req: Request, res: Response, _next: NextFunction) {
+  const book = books.find((b) => b.id === Number(req.params.id));
+  if (!book) {
+    res.status(404).json({ error: "Book not found" });
+    return;
+  }
+
+  const { title, authorId, publishedDate } = req.body;
+
+  if (authorId !== undefined && !authorExists(authorId)) {
+    res.status(404).json({ error: "Author not found" });
+    return;
+  }
+
+  book.title = title !== undefined ? title.trim() : book.title;
+  book.authorId = authorId ?? book.authorId;
+  book.publishedDate = publishedDate ?? book.publishedDate;
+  res.status(200).json(book);
+}
+
+export function deleteBook(req: Request, res: Response, _next: NextFunction) {
+  const index = books.findIndex((b) => b.id === Number(req.params.id));
+  if (index === -1) {
+    res.status(404).json({ error: "Book not found" });
+    return;
+  }
+
+  books.splice(index, 1);
+  res.status(204).send();
 }
