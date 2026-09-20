@@ -8,6 +8,6 @@ router.get("/", (_req, res) => {
 });
 
 //add routed to main router
-router.use("/author", authorRouter);
+router.use("/authors", authorRouter);
 
 export default router
