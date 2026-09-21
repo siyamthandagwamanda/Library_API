@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {getAllBooks, getBookById, createBook, updateBook, deleteBook} from "../controllers/booksController.js";
-import { validateCreateBook, validateUpdateBook } from "../middleware/validate.js";
+import { validateCreateBook, validateUpdateBook } from "../middleware/middleware.js";
 
 const bookRouter = Router();
 

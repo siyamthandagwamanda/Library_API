@@ -1,10 +1,31 @@
 import type { Request, Response, NextFunction } from "express";
 
+
+export function logger(req: Request, _res: Response, next: NextFunction) {
+  console.log(req.method + " " + req.originalUrl);
+  next();
+}
+
+export function notFound(_req: Request, res: Response, _next: NextFunction) {
+  res.status(404).json({ error: "Route not found" });
+}
+
+export function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
+  if (err.status === 400) {
+    res.status(400).json({ error: "Invalid JSON body" });
+    return;
+  }
+
+  console.error(err);
+  res.status(500).json({ error: "Internal Server Error" });
+}
+
+
 function isDate(value: any) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && !isNaN(Date.parse(value));
 }
 
-//Authors (POST and PUT)
+
 export function validateAuthor(req: Request, res: Response, next: NextFunction) {
   const body = req.body || {};
   const { name, bio, birthDate } = body;
@@ -24,7 +45,7 @@ export function validateAuthor(req: Request, res: Response, next: NextFunction) 
   next();
 }
 
-//Books: POST 
+
 export function validateCreateBook(req: Request, res: Response, next: NextFunction) {
   const body = req.body || {};
   const { title, authorId, publishedDate } = body;
@@ -44,7 +65,6 @@ export function validateCreateBook(req: Request, res: Response, next: NextFuncti
   next();
 }
 
-//Books: PUT 
 export function validateUpdateBook(req: Request, res: Response, next: NextFunction) {
   const body = req.body || {};
   const { title, authorId, publishedDate } = body;

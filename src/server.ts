@@ -1,7 +1,7 @@
 import express from "express";
-import { logger } from "./middleware/logger.js";
+import { logger } from "./middleware/middleware.js";
 import router from "./app.js";
-import { errorHandler, notFound } from "./middleware/errorHandler.js";
+import { errorHandler, notFound } from "./middleware/middleware.js";
 
 const app = express();
 

@@ -51,7 +51,7 @@ export function deleteAuthor(req: Request, res: Response, _next: NextFunction) {
     return;
   }
 
-  // do not delete an author who still has books
+
   const hasBooks = books.some((b) => b.authorId === id);
   if (hasBooks) {
     res.status(409).json({ error: "Author still has books. Delete the books first." });

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {createAuthor, getAuthors, getAuthorById, updateAuthor, deleteAuthor, getAuthorBooks,} from "../controllers/authorsController.js";
-import { validateAuthor } from "../middleware/validate.js";
+import { validateAuthor } from "../middleware/middleware.js";
 
 const authorRoute = Router();
 

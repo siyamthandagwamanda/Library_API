@@ -26,7 +26,7 @@ function getYear(book: Book) {
 export function filterBooks(list: Book[], query: Request["query"]) {
   let result = [...list];
 
-  // filtering
+ 
   const search = query.q || query.title;
   if (typeof search === "string") {
     result = result.filter((b) => b.title.toLowerCase().includes(search.toLowerCase()));
