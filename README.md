@@ -153,32 +153,68 @@ Error body format:
 
 ## Sample Requests
 
-Create author:
+Create an author first, since `authorId` must point to one that exists:
 
 ```
-curl -X POST http://localhost:3000/authors \
+curl -i -X POST http://localhost:3000/authors \
   -H "Content-Type: application/json" \
-  -d '{"name":"Terry Pratchett","birthDate":"1948-04-28"}'
+  -d '{"name": "Jane Austen"}'
 ```
 
-Create book (use the `id` returned for the author):
+Then create a book with that author's id (assuming it came back as `1`):
 
 ```
-curl -X POST http://localhost:3000/books \
+curl -i -X POST http://localhost:3000/books \
   -H "Content-Type: application/json" \
-  -d '{"title":"Mort","publishedDate":"1987-11-12","authorId":1}'
+  -d '{"title": "Pride and Prejudice", "authorId": 1, "publishedDate": "1813-01-28"}'
 ```
+
+### Validation tests worth running
+
+Missing title, expect 400:
+
+```
+curl -i -X POST http://localhost:3000/books \
+  -H "Content-Type: application/json" \
+  -d '{"authorId": 1}'
+```
+
+Missing authorId, expect 400:
+
+```
+curl -i -X POST http://localhost:3000/books \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Orphan Book"}'
+```
+
+`authorId` that doesn't exist, expect 404:
+
+```
+curl -i -X POST http://localhost:3000/books \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Ghost Author Book", "authorId": 999}'
+```
+
+`authorId` as a string, expect 400:
+
+```
+curl -i -X POST http://localhost:3000/books \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Wrong Type", "authorId": "1"}'
+```
+
+### Listing
 
 List books with filters:
 
 ```
-curl "http://localhost:3000/books?q=mort&sortBy=title&sortOrder=asc&page=1&pageSize=5"
+curl "http://localhost:3000/books?q=pride&sortBy=title&sortOrder=asc&page=1&pageSize=5"
 ```
 
 List one author's books:
 
 ```
-curl "http://localhost:3000/authors/1/books?yearMin=1980"
+curl "http://localhost:3000/authors/1/books?yearMin=1800"
 ```
 
 ## Notes
