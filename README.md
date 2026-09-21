@@ -27,9 +27,7 @@ src/
   server.ts
   config/
   middleware/
-    errorHandler.ts
-    logger.ts
-    validate.ts
+    middleware.ts
   model/
     author.ts
     books.ts
